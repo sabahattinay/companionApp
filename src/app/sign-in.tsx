@@ -14,8 +14,12 @@ export default function SignIn() {
 
   async function submit() {
     setMessage(null);
-    if (!email.includes('@') || password.length < 6) {
-      setMessage('Enter an email and a password of at least 6 characters.');
+    if (!email.trim().includes('@')) {
+      setMessage(`Email must contain "@" (you typed: "${email}").`);
+      return;
+    }
+    if (password.length < 6) {
+      setMessage(`Password must be at least 6 characters (you typed ${password.length}).`);
       return;
     }
 
