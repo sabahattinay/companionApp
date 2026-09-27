@@ -47,7 +47,7 @@ The function runs with elevated rights (SECURITY DEFINER), because under RLS a u
 |---|---|
 | Shared interest | Required (≥ 1) |
 | Travel time per station | Equal estimate per hop now; real timetable later |
-| Interests | Fixed tag list (~20), no free text |
+| Interests | Fixed list of 20 tags in the `interests` table; each user picks 3–5 |
 | Trips | `from ≠ to`; one active trip per user; `expires_at = depart_at + window_min + travel time to to_station`; no cron job, queries skip expired rows |
 | Before mutual wave | Show nickname, age range, interests, shared stretch only |
 | Profiles RLS | Readable by the owner and by users they share a match with |

@@ -2,6 +2,7 @@ import 'react-native-url-polyfill/auto';
 import 'expo-sqlite/localStorage/install';
 
 import { createClient } from '@supabase/supabase-js';
+import { AppState } from 'react-native';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -13,7 +14,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // The session is saved in localStorage (backed by expo-sqlite), so a
-// signed-in user stays signed in after the app restarts (needed for M2).
+// signed-in user stays signed in after the app restarts.
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: localStorage,
@@ -21,4 +22,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: false,
   },
+});
+
+// On a phone the login token is renewed only while the app is on screen;
+// this module is loaded once, so the listener is registered once.
+AppState.addEventListener('change', (state) => {
+  if (state === 'active') {
+    supabase.auth.startAutoRefresh();
+  } else {
+    supabase.auth.stopAutoRefresh();
+  }
 });

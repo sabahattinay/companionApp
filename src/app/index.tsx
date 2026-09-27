@@ -1,110 +1,77 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useAuth } from '@/lib/auth';
+import { useInterests } from '@/lib/interests';
 import { supabase } from '@/lib/supabase';
 
-type Station = {
-  id: number;
-  name: string;
-  seq: number;
-  min_from_start: number;
-};
-
-type State =
-  | { kind: 'loading' }
-  | { kind: 'error'; message: string }
-  | { kind: 'ok'; stations: Station[] };
-
 export default function Home() {
-  const [state, setState] = useState<State>({ kind: 'loading' });
+  const { session, profile } = useAuth();
+  const { interests } = useInterests();
 
-  useEffect(() => {
-    async function loadStations() {
-      const { data, error } = await supabase
-        .from('stations')
-        .select('id, name, seq, min_from_start')
-        .eq('line', 'Marmaray')
-        .order('seq')
-        .returns<Station[]>();
+  if (!profile) return null;
 
-      if (error) {
-        setState({ kind: 'error', message: error.message });
-      } else {
-        setState({ kind: 'ok', stations: data ?? [] });
-      }
-    }
-
-    loadStations();
-  }, []);
-
-  if (state.kind === 'loading') {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
-
-  if (state.kind === 'error') {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.error}>Supabase error: {state.message}</Text>
-      </View>
-    );
-  }
+  const labels = profile.interests.map(
+    (slug) => interests.find((interest) => interest.slug === slug)?.label ?? slug,
+  );
 
   return (
-    <FlatList
-      data={state.stations}
-      keyExtractor={(station) => String(station.id)}
-      ListHeaderComponent={
-        <Text style={styles.header}>{state.stations.length} Marmaray stations</Text>
-      }
-      renderItem={({ item }) => (
-        <View style={styles.row}>
-          <Text style={styles.seq}>{item.seq}</Text>
-          <Text style={styles.name}>{item.name}</Text>
-          <Text style={styles.minutes}>{item.min_from_start} min</Text>
-        </View>
-      )}
-    />
+    <View style={styles.container}>
+      <Text style={styles.title}>Hi {profile.nickname} 👋</Text>
+      <Text style={styles.detail}>Age range: {profile.age_range}</Text>
+      <Text style={styles.detail}>Interests: {labels.join(', ')}</Text>
+      {profile.bio && <Text style={styles.detail}>“{profile.bio}”</Text>}
+      <Text style={styles.email}>Signed in as {session?.user.email}</Text>
+
+      <Pressable style={styles.button} onPress={() => router.push('/profile')}>
+        <Text style={styles.buttonText}>Edit profile</Text>
+      </Pressable>
+      <Pressable style={styles.button} onPress={() => router.push('/stations')}>
+        <Text style={styles.buttonText}>Stations</Text>
+      </Pressable>
+      <Pressable style={[styles.button, styles.secondary]} onPress={() => supabase.auth.signOut()}>
+        <Text style={[styles.buttonText, styles.secondaryText]}>Sign out</Text>
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  center: {
+  container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: 8,
     padding: 24,
   },
-  error: {
-    fontSize: 16,
-    color: '#b00020',
-    textAlign: 'center',
-  },
-  header: {
-    fontSize: 18,
+  title: {
+    fontSize: 24,
     fontWeight: '600',
-    padding: 16,
+    marginBottom: 8,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ccc',
-  },
-  seq: {
-    width: 32,
-    color: '#888',
-  },
-  name: {
-    flex: 1,
+  detail: {
     fontSize: 16,
   },
-  minutes: {
+  email: {
     color: '#888',
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  button: {
+    backgroundColor: '#208AEF',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#208AEF',
+  },
+  secondaryText: {
+    color: '#208AEF',
   },
 });
