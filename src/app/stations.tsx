@@ -1,43 +1,19 @@
-import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
-import { supabase } from '@/lib/supabase';
-
-type Station = {
-  id: number;
-  name: string;
-  seq: number;
-  min_from_start: number;
-};
-
-type State =
-  | { kind: 'loading' }
-  | { kind: 'error'; message: string }
-  | { kind: 'ok'; stations: Station[] };
+import { useStations } from '@/lib/stations';
 
 export default function Stations() {
-  const [state, setState] = useState<State>({ kind: 'loading' });
+  const { stations, error } = useStations();
 
-  useEffect(() => {
-    async function loadStations() {
-      const { data, error } = await supabase
-        .from('stations')
-        .select('id, name, seq, min_from_start')
-        .eq('line', 'Marmaray')
-        .order('seq')
-        .returns<Station[]>();
+  if (error) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.error}>Supabase error: {error}</Text>
+      </View>
+    );
+  }
 
-      if (error) {
-        setState({ kind: 'error', message: error.message });
-      } else {
-        setState({ kind: 'ok', stations: data ?? [] });
-      }
-    }
-
-    loadStations();
-  }, []);
-
-  if (state.kind === 'loading') {
+  if (!stations) {
     return (
       <View style={styles.center}>
         <ActivityIndicator />
@@ -45,21 +21,11 @@ export default function Stations() {
     );
   }
 
-  if (state.kind === 'error') {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.error}>Supabase error: {state.message}</Text>
-      </View>
-    );
-  }
-
   return (
     <FlatList
-      data={state.stations}
+      data={stations}
       keyExtractor={(station) => String(station.id)}
-      ListHeaderComponent={
-        <Text style={styles.header}>{state.stations.length} Marmaray stations</Text>
-      }
+      ListHeaderComponent={<Text style={styles.header}>{stations.length} Marmaray stations</Text>}
       renderItem={({ item }) => (
         <View style={styles.row}>
           <Text style={styles.seq}>{item.seq}</Text>

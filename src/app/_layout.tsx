@@ -14,7 +14,7 @@ export default function RootLayout() {
 // Which screens exist depends on the user's state:
 //   not signed in                 → sign-in
 //   signed in, no profile yet     → profile (setup)
-//   signed in, profile saved      → home, stations, profile (edit)
+//   signed in, profile saved      → home, stations, post a trip, profile (edit)
 // If the current screen stops being allowed, Expo Router moves to the first allowed one.
 function RootStack() {
   const { session, profile, loading, profileError, reloadProfile } = useAuth();
@@ -44,6 +44,7 @@ function RootStack() {
       <Stack.Protected guard={signedIn && hasProfile}>
         <Stack.Screen name="index" options={{ title: 'CompanionApp' }} />
         <Stack.Screen name="stations" options={{ title: 'Stations' }} />
+        <Stack.Screen name="trip-new" options={{ title: 'Post a trip' }} />
       </Stack.Protected>
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="profile" options={{ title: hasProfile ? 'Edit profile' : 'Your profile' }} />
