@@ -41,6 +41,3 @@ example
 # generated native folders
 /ios
 /android
-
-# Supabase keys — never commit
-.env
