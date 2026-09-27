@@ -1,75 +1,110 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
 
-type Ping = {
+type Station = {
   id: number;
-  message: string;
+  name: string;
+  seq: number;
+  min_from_start: number;
 };
 
 type State =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'empty' }
-  | { kind: 'ok'; message: string };
+  | { kind: 'ok'; stations: Station[] };
 
 export default function Home() {
   const [state, setState] = useState<State>({ kind: 'loading' });
 
   useEffect(() => {
-    async function loadPing() {
+    async function loadStations() {
       const { data, error } = await supabase
-        .from('ping')
-        .select('id, message')
-        .order('id')
-        .returns<Ping[]>();
+        .from('stations')
+        .select('id, name, seq, min_from_start')
+        .eq('line', 'Marmaray')
+        .order('seq')
+        .returns<Station[]>();
 
       if (error) {
         setState({ kind: 'error', message: error.message });
-      } else if (!data || data.length === 0) {
-        setState({ kind: 'empty' });
       } else {
-        setState({ kind: 'ok', message: data[0].message });
+        setState({ kind: 'ok', stations: data ?? [] });
       }
     }
 
-    loadPing();
+    loadStations();
   }, []);
 
-  return (
-    <View style={styles.container}>
-      {state.kind === 'loading' && <ActivityIndicator />}
-      {state.kind === 'ok' && <Text style={styles.message}>{state.message}</Text>}
-      {state.kind === 'empty' && (
-        <Text style={styles.hint}>Connected, but the ping table has no rows.</Text>
-      )}
-      {state.kind === 'error' && (
+  if (state.kind === 'loading') {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (state.kind === 'error') {
+    return (
+      <View style={styles.center}>
         <Text style={styles.error}>Supabase error: {state.message}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      data={state.stations}
+      keyExtractor={(station) => String(station.id)}
+      ListHeaderComponent={
+        <Text style={styles.header}>{state.stations.length} Marmaray stations</Text>
+      }
+      renderItem={({ item }) => (
+        <View style={styles.row}>
+          <Text style={styles.seq}>{item.seq}</Text>
+          <Text style={styles.name}>{item.name}</Text>
+          <Text style={styles.minutes}>{item.min_from_start} min</Text>
+        </View>
       )}
-    </View>
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
   },
-  message: {
-    fontSize: 24,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  hint: {
-    fontSize: 16,
-    textAlign: 'center',
-  },
   error: {
     fontSize: 16,
     color: '#b00020',
     textAlign: 'center',
+  },
+  header: {
+    fontSize: 18,
+    fontWeight: '600',
+    padding: 16,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#ccc',
+  },
+  seq: {
+    width: 32,
+    color: '#888',
+  },
+  name: {
+    flex: 1,
+    fontSize: 16,
+  },
+  minutes: {
+    color: '#888',
   },
 });
